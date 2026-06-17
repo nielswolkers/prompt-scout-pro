@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 function NotFoundComponent() {
   return (
@@ -77,20 +79,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Reachly — Find anyone's email" },
+      { name: "description", content: "AI contact research. Verified emails, contact pages, and phone numbers from across the open web — including LinkedIn." },
+      { name: "author", content: "Reachly" },
+      { property: "og:title", content: "Reachly — Find anyone's email" },
+      { property: "og:description", content: "AI-powered contact research. Verified emails for people and companies, instantly." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
     ],
   }),
   shellComponent: RootShell,
@@ -118,8 +116,23 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <SidebarProvider>
+        <div className="flex h-screen w-full overflow-hidden bg-background">
+          <AppSidebar />
+          <div className="flex h-full min-w-0 flex-1 flex-col">
+            <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3">
+              <SidebarTrigger />
+              <h1 className="text-sm font-medium tracking-tight">Reachly</h1>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                Contact research
+              </span>
+            </header>
+            <main className="min-h-0 flex-1 overflow-hidden">
+              <Outlet />
+            </main>
+          </div>
+        </div>
+      </SidebarProvider>
     </QueryClientProvider>
   );
 }
