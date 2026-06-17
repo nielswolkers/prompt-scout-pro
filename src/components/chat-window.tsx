@@ -161,7 +161,7 @@ function MessageItem({ message }: { message: UIMessage }) {
     <Message from="assistant">
       <MessageContent className="w-full max-w-full">
         {toolParts.length > 0 && (
-          <div className="mb-1 flex flex-wrap gap-1.5">
+          <div className="mb-2 flex flex-wrap gap-2">
             {toolParts.map((p, i) => {
               const name = (p.type || "").replace(/^tool-/, "");
               const state = (p as { state?: string }).state ?? "";
@@ -170,17 +170,17 @@ function MessageItem({ message }: { message: UIMessage }) {
                 name === "search_web"
                   ? `Searching: "${String(input.query ?? "")}"`
                   : name === "scrape_url"
-                  ? `Reading ${String(input.url ?? "").replace(/^https?:\/\//, "").slice(0, 40)}`
+                  ? `Reading ${String(input.url ?? "").replace(/^https?:\/\//, "").slice(0, 50)}`
                   : name;
               return (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3 py-1.5 text-xs font-medium text-foreground/80"
                 >
                   {state === "output-available" ? (
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   ) : (
-                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   )}
                   {label}
                 </span>
