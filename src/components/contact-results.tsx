@@ -98,7 +98,7 @@ function LinkedInButton({ url }: { url: string }) {
       title="Open LinkedIn"
       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0A66C2] text-white transition-opacity hover:opacity-90"
     >
-      <Linkedin className="h-4 w-4" />
+      <LinkedinIcon className="h-4 w-4" />
     </a>
   );
 }
