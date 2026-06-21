@@ -141,7 +141,7 @@ function ContactCard({ c }: { c: Contact }) {
           <CopyButton value={primaryEmail} icon={Mail} label={primaryEmail ?? "Email"} />
           {c.phone && <CopyButton value={c.phone} icon={Phone} label={c.phone} />}
           {c.linkedinUrl && (
-            <CopyButton value={c.linkedinUrl} icon={Linkedin} label="LinkedIn" square href={c.linkedinUrl} />
+            <CopyButton value={c.linkedinUrl} icon={LinkedinIcon} label="LinkedIn" square href={c.linkedinUrl} />
           )}
         </div>
       )}
