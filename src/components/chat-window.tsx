@@ -160,7 +160,7 @@ function MessageItem({ message }: { message: UIMessage }) {
   return (
     <Message from="assistant">
       <MessageContent className="w-full max-w-full">
-        {toolParts.length > 0 && (
+        {toolParts.length > 0 && !contacts && (
           <div className="mb-2 flex flex-wrap gap-2">
             {toolParts.map((p, i) => {
               const name = (p.type || "").replace(/^tool-/, "");

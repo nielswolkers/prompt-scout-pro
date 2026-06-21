@@ -102,20 +102,38 @@ function CopyButton({
 }
 
 function ContactCard({ c }: { c: Contact }) {
-  const [imgError, setImgError] = useState(false);
+  const [imgIdx, setImgIdx] = useState(0);
   const allEmails = [c.email, ...(c.emails ?? [])].filter((e): e is string => !!e);
   const primaryEmail = allEmails[0];
   const extraEmails = allEmails.slice(1);
+
+  // Build a prioritized list of image candidates with smart fallbacks.
+  const domain = (() => {
+    const src = c.website || primaryEmail?.split("@")[1];
+    if (!src) return undefined;
+    return src.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  })();
+  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company)\/([^/?#]+)/i)?.[1];
+
+  const imageCandidates = [
+    c.imageUrl,
+    linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}`,
+    c.kind === "company" && domain && `https://logo.clearbit.com/${domain}`,
+    c.kind === "company" && domain && `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+    domain && `https://unavatar.io/${domain}`,
+  ].filter((u): u is string => !!u);
+
+  const currentImg = imageCandidates[imgIdx];
 
   return (
     <div className="group rounded-2xl border border-border bg-card p-5 transition-colors hover:border-foreground/20">
       <div className="flex items-start gap-4">
         <Avatar className={cn("h-16 w-16 shrink-0 border border-border", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
-          {c.imageUrl && !imgError && (
+          {currentImg && (
             <AvatarImage
-              src={c.imageUrl}
+              src={currentImg}
               alt={c.name}
-              onError={() => setImgError(true)}
+              onError={() => setImgIdx((i) => i + 1)}
               className={c.kind === "company" ? "object-contain p-1" : "object-cover"}
             />
           )}
