@@ -1,4 +1,4 @@
-import { Mail, Phone, ExternalLink, Globe, MapPin, BadgeCheck, AlertCircle, HelpCircle, User, Building2, Check } from "lucide-react";
+import { Mail, Phone, ExternalLink, Globe, MapPin, BadgeCheck, AlertCircle, HelpCircle, User, Building2 } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,6 @@ export type Contact = {
   phone?: string;
   website?: string;
   contactUrl?: string;
-  linkedinUrl?: string;
   imageUrl?: string;
   location?: string;
   source?: string;
@@ -39,92 +38,21 @@ function ConfidenceBadge({ c }: { c?: Contact["confidence"] }) {
   } as const;
   const v = map[c];
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", v.cls)}>
-      <v.Icon className="h-3.5 w-3.5" />
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium", v.cls)}>
+      <v.Icon className="h-3 w-3" />
       {v.label}
     </span>
   );
-}
-
-function CopyButton({
-  value,
-  icon: Icon,
-  label,
-  square = false,
-  href,
-}: {
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label?: string;
-  square?: boolean;
-  href?: string;
-}) {
-  const [copied, setCopied] = useState(false);
-  const handleClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // ignore
-    }
-  };
-  return (
-    <button
-      onClick={handleClick}
-      title={href ? `Copy ${value}` : value}
-      className={cn(
-        "group/btn inline-flex items-center justify-center gap-1.5 rounded-lg bg-muted/70 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background",
-        square ? "h-9 w-9 shrink-0" : "h-9 min-w-0 flex-1 px-3"
-      )}
-    >
-      {copied ? (
-        <Check className="h-4 w-4 shrink-0" />
-      ) : (
-        <Icon className="h-4 w-4 shrink-0" />
-      )}
-      {label && !square && <span className="truncate">{copied ? "Copied" : label}</span>}
-    </button>
-  );
-}
-
-function LinkedInButton({ url }: { url: string }) {
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      title="Open LinkedIn"
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0A66C2] text-white transition-opacity hover:opacity-90"
-    >
-      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zM8.34 18.34V9.67H5.67v8.67h2.67zM7 8.5a1.55 1.55 0 1 0 0-3.1 1.55 1.55 0 0 0 0 3.1zm11.34 9.84v-4.75c0-2.55-1.36-3.74-3.18-3.74-1.47 0-2.13.81-2.5 1.38V9.67h-2.67c.04.75 0 8.67 0 8.67h2.67v-4.84c0-.24.02-.48.09-.65.19-.48.63-.98 1.37-.98.97 0 1.36.74 1.36 1.82v4.65h2.86z"/></svg>
-    </a>
-  );
-}
-
-function truncateTitle(title?: string, max = 4) {
-  if (!title) return "";
-  const words = title.trim().split(/\s+/);
-  if (words.length <= max) return title;
-  return words.slice(0, max).join(" ");
 }
 
 function ContactCard({ c }: { c: Contact }) {
   const [imgError, setImgError] = useState(false);
   const allEmails = [c.email, ...(c.emails ?? [])].filter((e): e is string => !!e);
   const uniqueEmails = Array.from(new Set(allEmails));
-  const primaryEmail = uniqueEmails[0];
-  const title = truncateTitle(c.title, 4);
-  const linkedinUrl =
-    c.linkedinUrl ??
-    (c.website && /linkedin\.com/i.test(c.website) ? c.website : undefined) ??
-    (c.source && /linkedin\.com/i.test(c.source) ? c.source : undefined);
-
   return (
-    <div className="group rounded-2xl border border-border bg-card p-5 transition-colors hover:border-foreground/20">
+    <div className="group rounded-2xl border border-border bg-card p-4 transition-colors hover:border-foreground/20">
       <div className="flex items-start gap-4">
-        <Avatar className={cn("h-14 w-14 shrink-0 border border-border", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
+        <Avatar className={cn("h-12 w-12 shrink-0 border border-border", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
           {c.imageUrl && !imgError && (
             <AvatarImage
               src={c.imageUrl}
@@ -133,56 +61,65 @@ function ContactCard({ c }: { c: Contact }) {
               className={c.kind === "company" ? "object-contain p-1" : "object-cover"}
             />
           )}
-          <AvatarFallback className={cn("bg-muted text-sm font-medium text-muted-foreground", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
+          <AvatarFallback className={cn("bg-muted text-xs font-medium text-muted-foreground", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
             {c.name ? initials(c.name) : c.kind === "company" ? <Building2 className="h-5 w-5" /> : <User className="h-5 w-5" />}
           </AvatarFallback>
         </Avatar>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="truncate text-base font-semibold text-foreground">{c.name}</h3>
+            <h3 className="truncate text-sm font-semibold text-foreground">{c.name}</h3>
             <ConfidenceBadge c={c.confidence} />
           </div>
-          {title && (
-            <p className="mt-0.5 truncate text-sm font-medium text-foreground/80">{title}</p>
-          )}
-          {c.kind === "person" && c.company && (
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">{c.company}</p>
+          {(c.title || c.company) && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {[c.title, c.company].filter(Boolean).join(" · ")}
+            </p>
           )}
           {c.location && (
-            <p className="mt-0.5 inline-flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5" /> {c.location}
+            <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" /> {c.location}
             </p>
           )}
 
-          {(primaryEmail || c.phone || linkedinUrl) && (
-            <div className="mt-3 flex items-stretch gap-2">
-              {primaryEmail && (
-                <CopyButton value={primaryEmail} icon={Mail} label={primaryEmail} href={`mailto:${primaryEmail}`} />
-              )}
-              {c.phone && (
-                <CopyButton value={c.phone} icon={Phone} label={c.phone} href={`tel:${c.phone}`} />
-              )}
-              {linkedinUrl && <LinkedInButton url={linkedinUrl} />}
-            </div>
-          )}
+          <div className="mt-3 space-y-1.5">
+            {uniqueEmails.map((email) => (
+              <a
+                key={email}
+                href={`mailto:${email}`}
+                className="group/email inline-flex max-w-full items-center gap-2 rounded-md bg-muted/60 px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
+              >
+                <Mail className="h-3 w-3" />
+                <span className="truncate">{email}</span>
+              </a>
+            ))}
+            {c.phone && (
+              <a
+                href={`tel:${c.phone}`}
+                className="ml-1 inline-flex items-center gap-2 rounded-md bg-muted/60 px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
+              >
+                <Phone className="h-3 w-3" />
+                {c.phone}
+              </a>
+            )}
+          </div>
 
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
-            {c.website && !/linkedin\.com/i.test(c.website) && (
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+            {c.website && (
               <a href={c.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
-                <Globe className="h-3.5 w-3.5" />
-                <span className="max-w-[220px] truncate">{c.website.replace(/^https?:\/\//, "")}</span>
+                <Globe className="h-3 w-3" />
+                <span className="max-w-[200px] truncate">{c.website.replace(/^https?:\/\//, "")}</span>
               </a>
             )}
             {c.contactUrl && c.contactUrl !== c.website && (
               <a href={c.contactUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ExternalLink className="h-3 w-3" />
                 Contact page
               </a>
             )}
             {c.source && c.source !== c.website && c.source !== c.contactUrl && (
               <a href={c.source} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ExternalLink className="h-3 w-3" />
                 Source
               </a>
             )}
@@ -202,7 +139,7 @@ export function ContactResults({ contacts }: { contacts: Contact[] }) {
     );
   }
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {contacts.map((c, i) => (
         <ContactCard key={`${c.email ?? c.name}-${i}`} c={c} />
       ))}
