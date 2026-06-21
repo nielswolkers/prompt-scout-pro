@@ -28,10 +28,11 @@ LINKEDIN — almost everyone has one:
 - If you cannot find the exact profile, construct a plausible search URL: "https://www.linkedin.com/search/results/people/?keywords=<name>+<company>" with confidence "guessed". Prefer real /in/ URLs.
 - For companies, find linkedin.com/company/<slug>.
 
-IMAGES — mandatory:
-- EVERY contact MUST have an imageUrl. Try in this order: LinkedIn profile photo, company team page, personal website, Instagram (search "site:instagram.com <name>"), Twitter/X, GitHub avatar, Facebook, news articles, conference speaker pages, university faculty pages.
-- For companies: logo from their website, or use "https://logo.clearbit.com/<domain>" as a reliable fallback, or their LinkedIn company image.
-- Scrape pages to extract og:image meta tags or <img> URLs. NEVER leave imageUrl empty.
+IMAGES — MANDATORY, NEVER EMPTY:
+- EVERY contact MUST have an imageUrl (https). This is non-negotiable.
+- For PEOPLE: search Google Images ("<name> <company> linkedin"), check LinkedIn profile (media.licdn.com URLs), scrape their LinkedIn / personal site / company team page for og:image or <img> tags, then try Instagram, Twitter/X (unavatar.io/twitter/<handle>), GitHub avatars, conference speaker pages, university faculty bios. If you find a LinkedIn URL, you can use "https://unavatar.io/linkedin/<username>" as a guaranteed fallback (extract username from linkedin.com/in/<username>).
+- For COMPANIES: ALWAYS provide a logo. Use "https://logo.clearbit.com/<domain>" as the reliable default (e.g. logo.clearbit.com/airliquide.com). Also try scraping the company site for og:image or logo <img>. Never return a company without a logo URL.
+- Run search_web with queries like "<name> profile picture", "<name> headshot site:linkedin.com", and scrape result pages to extract image URLs from meta tags. Do not give up after one try.
 
 TITLE FORMAT:
 - Maximum 4 words. Be concise: "VP Engineering", "Head of Talent", "CEO", "Press Officer", "Student", "Marketing Manager".
