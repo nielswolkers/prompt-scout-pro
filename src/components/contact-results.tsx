@@ -62,7 +62,7 @@ function CopyButton({
   href,
 }: {
   value?: string;
-  icon: typeof Mail;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   square?: boolean;
   href?: string;
