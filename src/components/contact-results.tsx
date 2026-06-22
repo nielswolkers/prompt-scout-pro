@@ -1,4 +1,4 @@
-import { Mail, Phone, ExternalLink, Globe, MapPin, BadgeCheck, AlertCircle, HelpCircle, User, Building2, Check } from "lucide-react";
+import { Mail, Phone, ExternalLink, Globe, MapPin, BadgeCheck, AlertCircle, HelpCircle, User, Building2, Check, FileText } from "lucide-react";
 
 function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -25,6 +25,8 @@ export type Contact = {
   imageUrl?: string;
   location?: string;
   source?: string;
+  formUrl?: string;
+  formLabel?: string;
   confidence?: "verified" | "likely" | "guessed";
 };
 
@@ -113,12 +115,14 @@ function ContactCard({ c }: { c: Contact }) {
     if (!src) return undefined;
     return src.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
   })();
-  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company)\/([^/?#]+)/i)?.[1];
+  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company|school)\/([^/?#]+)/i)?.[1];
 
   const imageCandidates = [
+    linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}?fallback=false`,
     linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}`,
     c.imageUrl,
     c.kind === "company" && domain && `https://logo.clearbit.com/${domain}`,
+    domain && `https://unavatar.io/${domain}?fallback=false`,
     domain && `https://unavatar.io/${domain}`,
     c.kind === "company" && domain && `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
   ].filter((u): u is string => !!u);
@@ -162,10 +166,19 @@ function ContactCard({ c }: { c: Contact }) {
         </div>
       </div>
 
-      {(primaryEmail || c.phone || c.linkedinUrl) && (
+      {(primaryEmail || c.phone || c.linkedinUrl || c.formUrl) && (
         <div className="mt-4 flex items-stretch gap-2">
-          <CopyButton value={primaryEmail} icon={Mail} label={primaryEmail ?? "Email"} />
-          {c.phone && <CopyButton value={c.phone} icon={Phone} label={c.phone} />}
+          {c.formUrl && !primaryEmail && !c.phone ? (
+            <CopyButton value={c.formUrl} icon={FileText} label={c.formLabel ?? "Open form"} href={c.formUrl} />
+          ) : (
+            <>
+              <CopyButton value={primaryEmail} icon={Mail} label={primaryEmail ?? "Email"} />
+              {c.phone && <CopyButton value={c.phone} icon={Phone} label={c.phone} />}
+              {c.formUrl && (
+                <CopyButton value={c.formUrl} icon={FileText} label={c.formLabel ?? "Form"} href={c.formUrl} />
+              )}
+            </>
+          )}
           {c.linkedinUrl && (
             <CopyButton value={c.linkedinUrl} icon={LinkedinIcon} label="LinkedIn" square href={c.linkedinUrl} />
           )}

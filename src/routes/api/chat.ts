@@ -30,10 +30,17 @@ LINKEDIN — almost everyone has one:
 
 IMAGES — MANDATORY, LINKEDIN FIRST:
 - EVERY contact MUST have an imageUrl (https). This is non-negotiable.
-- ALWAYS search for a LinkedIn profile/page first (people AND companies). If found, set imageUrl to "https://unavatar.io/linkedin/<handle>" where <handle> is extracted from linkedin.com/in/<handle> or linkedin.com/company/<handle>. This is the preferred source for BOTH people headshots AND company logos.
+- ALWAYS search for a LinkedIn profile/page first (people AND companies). For COMPANIES this is critical: run "site:linkedin.com/company <company name>" and pick the canonical /company/<slug> URL. Set linkedinUrl to that URL so the UI can resolve the logo via unavatar.io/linkedin/<slug>.
+- The frontend auto-derives the image from linkedinUrl. You should ALSO set imageUrl to "https://unavatar.io/linkedin/<handle>" as a backup.
 - For PEOPLE: only if no LinkedIn exists after searching, fall back to: scraping the person's personal site / company team page for og:image, Instagram (unavatar.io/instagram/<handle>), Twitter/X (unavatar.io/twitter/<handle>), GitHub avatars, university faculty bios.
-- For COMPANIES: only if no LinkedIn company page exists, fall back to: "https://logo.clearbit.com/<domain>", Wikipedia Commons logo, or scrape the site for og:image / logo.
+- For COMPANIES: only if no LinkedIn company page exists, fall back to: "https://logo.clearbit.com/<domain>", Wikipedia Commons logo, or scrape the site for og:image / logo. Do NOT settle for a favicon.
 - Run search_web with "site:linkedin.com/in <name>" and "site:linkedin.com/company <company>" early in EVERY search. Never skip the LinkedIn lookup.
+
+ONLINE FORMS (use when more appropriate than email/phone):
+- If the user's intent is something handled via a form (recruitment / job applications, press inquiries, support tickets, sales contact forms, university admissions) AND a direct email isn't clearly published, surface the form instead.
+- Populate "formUrl" with the direct URL and "formLabel" with a short verb phrase: "Apply now", "Contact recruiting", "Press form", "Submit inquiry".
+- If a form is the canonical channel (e.g. careers portal) and no email exists, you may omit "email" entirely — the form button will be the primary CTA. Still include linkedinUrl and imageUrl.
+- If both email AND form make sense, include both — the form renders as a secondary button.
 
 TITLE FORMAT:
 - Maximum 4 words. Be concise: "VP Engineering", "Head of Talent", "CEO", "Press Officer", "Student", "Marketing Manager".
@@ -65,6 +72,8 @@ Each item:
   "imageUrl"?: string,            // ALWAYS provide (https URL)
   "location"?: string,            // City, Country
   "source"?: string,
+  "formUrl"?: string,             // Online form URL when more appropriate than email
+  "formLabel"?: string,           // Short CTA, e.g. "Apply now"
   "confidence": "verified" | "likely" | "guessed"
 }
 
