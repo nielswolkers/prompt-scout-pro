@@ -25,6 +25,8 @@ export type Contact = {
   imageUrl?: string;
   location?: string;
   source?: string;
+  formUrl?: string;
+  formLabel?: string;
   confidence?: "verified" | "likely" | "guessed";
 };
 
