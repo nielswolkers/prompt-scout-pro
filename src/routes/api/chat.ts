@@ -28,11 +28,12 @@ LINKEDIN — almost everyone has one:
 - If you cannot find the exact profile, construct a plausible search URL: "https://www.linkedin.com/search/results/people/?keywords=<name>+<company>" with confidence "guessed". Prefer real /in/ URLs.
 - For companies, find linkedin.com/company/<slug>.
 
-IMAGES — MANDATORY, NEVER EMPTY:
+IMAGES — MANDATORY, LINKEDIN FIRST:
 - EVERY contact MUST have an imageUrl (https). This is non-negotiable.
-- For PEOPLE: search Google Images ("<name> <company> linkedin"), check LinkedIn profile (media.licdn.com URLs), scrape their LinkedIn / personal site / company team page for og:image or <img> tags, then try Instagram, Twitter/X (unavatar.io/twitter/<handle>), GitHub avatars, conference speaker pages, university faculty bios. If you find a LinkedIn URL, you can use "https://unavatar.io/linkedin/<username>" as a guaranteed fallback (extract username from linkedin.com/in/<username>).
-- For COMPANIES: ALWAYS provide a logo. Use "https://logo.clearbit.com/<domain>" as the reliable default (e.g. logo.clearbit.com/airliquide.com). Also try scraping the company site for og:image or logo <img>. Never return a company without a logo URL.
-- Run search_web with queries like "<name> profile picture", "<name> headshot site:linkedin.com", and scrape result pages to extract image URLs from meta tags. Do not give up after one try.
+- ALWAYS search for a LinkedIn profile/page first (people AND companies). If found, set imageUrl to "https://unavatar.io/linkedin/<handle>" where <handle> is extracted from linkedin.com/in/<handle> or linkedin.com/company/<handle>. This is the preferred source for BOTH people headshots AND company logos.
+- For PEOPLE: only if no LinkedIn exists after searching, fall back to: scraping the person's personal site / company team page for og:image, Instagram (unavatar.io/instagram/<handle>), Twitter/X (unavatar.io/twitter/<handle>), GitHub avatars, university faculty bios.
+- For COMPANIES: only if no LinkedIn company page exists, fall back to: "https://logo.clearbit.com/<domain>", Wikipedia Commons logo, or scrape the site for og:image / logo.
+- Run search_web with "site:linkedin.com/in <name>" and "site:linkedin.com/company <company>" early in EVERY search. Never skip the LinkedIn lookup.
 
 TITLE FORMAT:
 - Maximum 4 words. Be concise: "VP Engineering", "Head of Talent", "CEO", "Press Officer", "Student", "Marketing Manager".
