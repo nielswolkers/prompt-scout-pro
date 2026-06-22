@@ -72,6 +72,8 @@ Each item:
   "imageUrl"?: string,            // ALWAYS provide (https URL)
   "location"?: string,            // City, Country
   "source"?: string,
+  "formUrl"?: string,             // Online form URL when more appropriate than email
+  "formLabel"?: string,           // Short CTA, e.g. "Apply now"
   "confidence": "verified" | "likely" | "guessed"
 }
 
