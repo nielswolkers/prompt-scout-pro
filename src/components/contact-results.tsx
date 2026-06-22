@@ -166,10 +166,19 @@ function ContactCard({ c }: { c: Contact }) {
         </div>
       </div>
 
-      {(primaryEmail || c.phone || c.linkedinUrl) && (
+      {(primaryEmail || c.phone || c.linkedinUrl || c.formUrl) && (
         <div className="mt-4 flex items-stretch gap-2">
-          <CopyButton value={primaryEmail} icon={Mail} label={primaryEmail ?? "Email"} />
-          {c.phone && <CopyButton value={c.phone} icon={Phone} label={c.phone} />}
+          {c.formUrl && !primaryEmail && !c.phone ? (
+            <CopyButton value={c.formUrl} icon={FileText} label={c.formLabel ?? "Open form"} href={c.formUrl} />
+          ) : (
+            <>
+              <CopyButton value={primaryEmail} icon={Mail} label={primaryEmail ?? "Email"} />
+              {c.phone && <CopyButton value={c.phone} icon={Phone} label={c.phone} />}
+              {c.formUrl && (
+                <CopyButton value={c.formUrl} icon={FileText} label={c.formLabel ?? "Form"} href={c.formUrl} />
+              )}
+            </>
+          )}
           {c.linkedinUrl && (
             <CopyButton value={c.linkedinUrl} icon={LinkedinIcon} label="LinkedIn" square href={c.linkedinUrl} />
           )}
