@@ -34,10 +34,9 @@ export function newThreadId() {
 }
 
 export function useThreads() {
-  const [threads, setThreads] = useState<Thread[]>([]);
+  const [threads, setThreads] = useState<Thread[]>(() => read());
 
   useEffect(() => {
-    setThreads(read());
     const onStorage = (e: StorageEvent) => {
       if (e.key === KEY) setThreads(read());
     };

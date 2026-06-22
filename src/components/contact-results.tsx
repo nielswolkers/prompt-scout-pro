@@ -1,6 +1,4 @@
-import { Mail, Phone, ExternalLink, Globe, MapPin, BadgeCheck, AlertCircle, HelpCircle, User, Building2, Check, FileText } from "lucide-react";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { Mail, Phone, ExternalLink, Globe, MapPin, BadgeCheck, AlertCircle, HelpCircle, User, Building2, Check } from "lucide-react";
 
 function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -9,6 +7,9 @@ function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 export type Contact = {
   name: string;
@@ -18,11 +19,9 @@ export type Contact = {
   email?: string;
   emails?: string[];
   phone?: string;
-  phones?: string[];
   website?: string;
   linkedinUrl?: string;
   contactUrl?: string;
-  formUrl?: string;
   imageUrl?: string;
   location?: string;
   source?: string;
@@ -30,10 +29,13 @@ export type Contact = {
 };
 
 function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }
 
 function ConfidenceBadge({ c }: { c?: Contact["confidence"] }) {
@@ -52,44 +54,44 @@ function ConfidenceBadge({ c }: { c?: Contact["confidence"] }) {
   );
 }
 
-function ActionButton({
+function CopyButton({
   value,
   icon: Icon,
   label,
   square = false,
   href,
-  copyable = true,
 }: {
-  value: string;
+  value?: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   square?: boolean;
   href?: string;
-  copyable?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-
-  const baseCls = cn(
-    "inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-muted/50 text-sm font-medium text-foreground transition-all hover:border-foreground/30 hover:bg-foreground hover:text-background active:scale-[0.97]",
-    square ? "w-10 shrink-0" : "flex-1 min-w-0 px-3",
-  );
-
-  if (href && !copyable) {
-    return (
-      <a href={href} target="_blank" rel="noreferrer" className={baseCls} aria-label={label} title={label}>
-        <Icon className="h-4 w-4 shrink-0" />
-        {!square && <span className="truncate">{label}</span>}
-      </a>
-    );
-  }
+  if (!value) return null;
 
   const handleClick = (e: React.MouseEvent) => {
+    if (href) return; // let link navigate
     e.preventDefault();
     navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1400);
     });
   };
+
+  const baseCls = cn(
+    "inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-muted/50 text-sm font-medium text-foreground transition-all hover:border-foreground/30 hover:bg-foreground hover:text-background active:scale-[0.97]",
+    square ? "w-10 shrink-0" : "flex-1 min-w-0 px-3",
+  );
+
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={baseCls} aria-label={label}>
+        <Icon className="h-4 w-4 shrink-0" />
+        {!square && <span className="truncate">{label}</span>}
+      </a>
+    );
+  }
 
   return (
     <button type="button" onClick={handleClick} className={baseCls} aria-label={`Copy ${label}`} title={`Copy ${value}`}>
@@ -99,97 +101,59 @@ function ActionButton({
   );
 }
 
-function Initials({ name, kind }: { name: string; kind: Contact["kind"] }) {
-  return (
-    <div className={cn(
-      "flex h-16 w-16 shrink-0 items-center justify-center border border-border bg-muted text-base font-semibold text-muted-foreground",
-      kind === "company" ? "rounded-xl" : "rounded-full",
-    )}>
-      {name ? initials(name) : kind === "company" ? <Building2 className="h-6 w-6" /> : <User className="h-6 w-6" />}
-    </div>
-  );
-}
+function ContactCard({ c }: { c: Contact }) {
+  const [imgIdx, setImgIdx] = useState(0);
+  const allEmails = [c.email, ...(c.emails ?? [])].filter((e): e is string => !!e);
+  const primaryEmail = allEmails[0];
+  const extraEmails = allEmails.slice(1);
 
-function ContactAvatar({ c }: { c: Contact }) {
-  const [idx, setIdx] = useState(0);
-
+  // Build a prioritized list of image candidates with smart fallbacks.
   const domain = (() => {
-    const src = c.website || c.email?.split("@")[1] || c.emails?.[0]?.split("@")[1];
+    const src = c.website || primaryEmail?.split("@")[1];
     if (!src) return undefined;
     return src.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
   })();
-  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company|school)\/([^/?#]+)/i)?.[1];
+  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company)\/([^/?#]+)/i)?.[1];
 
-  // Trust AI's scraped imageUrl FIRST (could be og:image, wikipedia, company team page, licdn).
-  // Then LinkedIn-based proxies. Then domain logos.
-  const candidates = [
+  const imageCandidates = [
+    linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}`,
     c.imageUrl,
-    linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}?fallback=false`,
     c.kind === "company" && domain && `https://logo.clearbit.com/${domain}`,
-    domain && `https://unavatar.io/${domain}?fallback=false`,
-    c.kind === "company" && domain && `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+    domain && `https://unavatar.io/${domain}`,
+    c.kind === "company" && domain && `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
   ].filter((u): u is string => !!u);
 
-  const src = candidates[idx];
-  if (!src) return <Initials name={c.name} kind={c.kind} />;
-
-  return (
-    <img
-      src={src}
-      alt={c.name}
-      onError={() => setIdx((i) => i + 1)}
-      referrerPolicy="no-referrer"
-      className={cn(
-        "h-16 w-16 shrink-0 border border-border bg-muted",
-        c.kind === "company" ? "rounded-xl object-contain p-1" : "rounded-full object-cover",
-      )}
-    />
-  );
-}
-
-function ContactCard({ c }: { c: Contact }) {
-  const primaryEmail = c.email ?? c.emails?.[0];
-  const primaryPhone = c.phone ?? c.phones?.[0];
-  const formHref = c.formUrl ?? (c.contactUrl && c.contactUrl !== c.website ? c.contactUrl : undefined);
-
-  // Build up to 4 action buttons, ordered by relevance.
-  type Action = { key: string; node: React.ReactNode };
-  const actions: Action[] = [];
-
-  // For companies without email/phone but with website, lead with the website.
-  if (c.kind === "company" && c.website && !primaryEmail && !primaryPhone) {
-    actions.push({ key: "web", node: <ActionButton value={c.website} icon={Globe} label="Website" href={c.website} copyable={false} /> });
-  }
-  if (primaryEmail) {
-    actions.push({ key: "email", node: <ActionButton value={primaryEmail} icon={Mail} label={primaryEmail} /> });
-  }
-  if (primaryPhone) {
-    actions.push({ key: "phone", node: <ActionButton value={primaryPhone} icon={Phone} label={primaryPhone} /> });
-  }
-  if (formHref && actions.length < 3) {
-    actions.push({ key: "form", node: <ActionButton value={formHref} icon={FileText} label="Contact form" href={formHref} copyable={false} /> });
-  }
-  if (c.kind === "company" && c.website && !actions.some((a) => a.key === "web") && actions.length < 3) {
-    actions.push({ key: "web", node: <ActionButton value={c.website} icon={Globe} label="Website" href={c.website} copyable={false} /> });
-  }
-  // LinkedIn always last as a square icon button.
-  if (c.linkedinUrl) {
-    actions.push({ key: "li", node: <ActionButton value={c.linkedinUrl} icon={LinkedinIcon} label="LinkedIn" href={c.linkedinUrl} copyable={false} square /> });
-  }
-
-  const shownActions = actions.slice(0, 4);
+  const currentImg = imageCandidates[imgIdx];
 
   return (
     <div className="group rounded-2xl border border-border bg-card p-5 transition-colors hover:border-foreground/20">
       <div className="flex items-start gap-4">
-        <ContactAvatar c={c} />
+        <Avatar className={cn("h-16 w-16 shrink-0 border border-border", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
+          {currentImg && (
+            <AvatarImage
+              src={currentImg}
+              alt={c.name}
+              onError={() => setImgIdx((i) => i + 1)}
+              className={c.kind === "company" ? "object-contain p-1" : "object-cover"}
+            />
+          )}
+          <AvatarFallback className={cn("bg-muted text-sm font-medium text-muted-foreground", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
+            {c.name ? initials(c.name) : c.kind === "company" ? <Building2 className="h-6 w-6" /> : <User className="h-6 w-6" />}
+          </AvatarFallback>
+        </Avatar>
+
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h3 className="truncate text-base font-semibold text-foreground">{c.name}</h3>
             <ConfidenceBadge c={c.confidence} />
           </div>
-          {c.title && <p className="mt-1 truncate text-sm font-medium text-foreground/80">{c.title}</p>}
-          {c.company && c.kind === "person" && <p className="truncate text-sm text-muted-foreground">{c.company}</p>}
+
+          {c.title && (
+            <p className="mt-1 truncate text-sm font-medium text-foreground/80">{c.title}</p>
+          )}
+          {c.company && c.kind === "person" && (
+            <p className="truncate text-sm text-muted-foreground">{c.company}</p>
+          )}
           {c.location && (
             <p className="inline-flex items-center gap-1 text-sm text-muted-foreground">
               <MapPin className="h-3.5 w-3.5" /> {c.location}
@@ -198,9 +162,21 @@ function ContactCard({ c }: { c: Contact }) {
         </div>
       </div>
 
-      {shownActions.length > 0 && (
+      {(primaryEmail || c.phone || c.linkedinUrl) && (
         <div className="mt-4 flex items-stretch gap-2">
-          {shownActions.map((a) => <div key={a.key} className="contents">{a.node}</div>)}
+          <CopyButton value={primaryEmail} icon={Mail} label={primaryEmail ?? "Email"} />
+          {c.phone && <CopyButton value={c.phone} icon={Phone} label={c.phone} />}
+          {c.linkedinUrl && (
+            <CopyButton value={c.linkedinUrl} icon={LinkedinIcon} label="LinkedIn" square href={c.linkedinUrl} />
+          )}
+        </div>
+      )}
+
+      {extraEmails.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {extraEmails.map((email) => (
+            <CopyButton key={email} value={email} icon={Mail} label={email} />
+          ))}
         </div>
       )}
 
@@ -209,6 +185,12 @@ function ContactCard({ c }: { c: Contact }) {
           <a href={c.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
             <Globe className="h-3.5 w-3.5" />
             <span className="max-w-[220px] truncate">{c.website.replace(/^https?:\/\//, "")}</span>
+          </a>
+        )}
+        {c.contactUrl && c.contactUrl !== c.website && (
+          <a href={c.contactUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
+            <ExternalLink className="h-3.5 w-3.5" />
+            Contact page
           </a>
         )}
         {c.source && c.source !== c.website && c.source !== c.contactUrl && (
@@ -239,6 +221,10 @@ export function ContactResults({ contacts }: { contacts: Contact[] }) {
   );
 }
 
+/**
+ * Extract `[{...}]` JSON from a fenced ```contacts block in streamed text.
+ * Tolerates an in-progress / unterminated block during streaming.
+ */
 export function parseContacts(text: string): { prose: string; contacts: Contact[] | null; streaming: boolean } {
   const fenceRe = /```contacts\s*([\s\S]*?)(```|$)/i;
   const m = text.match(fenceRe);
@@ -249,9 +235,11 @@ export function parseContacts(text: string): { prose: string; contacts: Contact[
   if (!closed) return { prose: before, contacts: null, streaming: true };
   try {
     const parsed = JSON.parse(body);
-    if (Array.isArray(parsed)) return { prose: before, contacts: parsed as Contact[], streaming: false };
+    if (Array.isArray(parsed)) {
+      return { prose: before, contacts: parsed as Contact[], streaming: false };
+    }
   } catch {
-    // ignore
+    // fall through
   }
   return { prose: before, contacts: null, streaming: false };
 }
