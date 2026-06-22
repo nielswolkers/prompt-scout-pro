@@ -58,11 +58,9 @@ export function AppSidebar(): ReactNode {
           <SidebarGroupContent>
             <SidebarMenu>
               {threads.length === 0 && (
-                <SidebarMenuItem>
-                  <span className="block px-3 py-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-                    No searches yet.
-                  </span>
-                </SidebarMenuItem>
+                <p className="px-3 py-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+                  No searches yet.
+                </p>
               )}
               {threads.map((t) => {
                 const active = pathname === `/${t.id}`;
