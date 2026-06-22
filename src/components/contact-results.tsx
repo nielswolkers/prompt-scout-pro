@@ -116,11 +116,11 @@ function ContactCard({ c }: { c: Contact }) {
   const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company)\/([^/?#]+)/i)?.[1];
 
   const imageCandidates = [
-    c.imageUrl,
     linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}`,
+    c.imageUrl,
     c.kind === "company" && domain && `https://logo.clearbit.com/${domain}`,
-    c.kind === "company" && domain && `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
     domain && `https://unavatar.io/${domain}`,
+    c.kind === "company" && domain && `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
   ].filter((u): u is string => !!u);
 
   const currentImg = imageCandidates[imgIdx];
