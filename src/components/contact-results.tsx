@@ -115,12 +115,14 @@ function ContactCard({ c }: { c: Contact }) {
     if (!src) return undefined;
     return src.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
   })();
-  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company)\/([^/?#]+)/i)?.[1];
+  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company|school)\/([^/?#]+)/i)?.[1];
 
   const imageCandidates = [
+    linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}?fallback=false`,
     linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}`,
     c.imageUrl,
     c.kind === "company" && domain && `https://logo.clearbit.com/${domain}`,
+    domain && `https://unavatar.io/${domain}?fallback=false`,
     domain && `https://unavatar.io/${domain}`,
     c.kind === "company" && domain && `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
   ].filter((u): u is string => !!u);
