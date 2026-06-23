@@ -4,6 +4,7 @@ import {
   streamText,
   tool,
   stepCountIs,
+  APICallError,
   type UIMessage,
 } from "ai";
 import { z } from "zod";
@@ -11,6 +12,18 @@ import Firecrawl from "@mendable/firecrawl-js";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 type ChatRequestBody = { messages?: unknown };
+
+function getStreamErrorMessage(error: unknown) {
+  if (APICallError.isInstance(error)) {
+    if (error.statusCode === 402) {
+      return "Search is temporarily unavailable because the AI credits are exhausted. Please add credits, then try again.";
+    }
+    if (error.statusCode === 429) {
+      return "Search is temporarily rate-limited. Please wait a moment and try again.";
+    }
+  }
+  return "Search failed. Please try again.";
+}
 
 const SYSTEM_PROMPT = `You are Reachly — a precision contact research agent. Find emails, LinkedIn profiles, profile pictures / logos, websites, contact forms, and (only when explicitly requested) phone numbers for people and companies.
 
@@ -151,6 +164,7 @@ export const Route = createFileRoute("/api/chat")({
 
         return result.toUIMessageStreamResponse({
           originalMessages: messages as UIMessage[],
+          onError: getStreamErrorMessage,
         });
       },
     },
