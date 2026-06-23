@@ -22,7 +22,7 @@ function getStreamErrorMessage(error: unknown) {
       return "Search is temporarily rate-limited. Please wait a moment and try again.";
     }
   }
-  return error instanceof Error ? error.message : "Search failed. Please try again.";
+  return "Search failed. Please try again.";
 }
 
 const SYSTEM_PROMPT = `You are Reachly — a precision contact research agent. Find emails, LinkedIn profiles, profile pictures / logos, websites, contact forms, and (only when explicitly requested) phone numbers for people and companies.
