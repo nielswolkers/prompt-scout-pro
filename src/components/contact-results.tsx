@@ -1,4 +1,4 @@
-import { Mail, Phone, ExternalLink, Globe, MapPin, BadgeCheck, AlertCircle, HelpCircle, User, Building2, Check } from "lucide-react";
+import { Mail, Phone, ExternalLink, Globe, MapPin, BadgeCheck, AlertCircle, HelpCircle, User, Building2, Check, FileText } from "lucide-react";
 
 function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -19,9 +19,11 @@ export type Contact = {
   email?: string;
   emails?: string[];
   phone?: string;
+  phones?: string[];
   website?: string;
   linkedinUrl?: string;
   contactUrl?: string;
+  formUrl?: string;
   imageUrl?: string;
   location?: string;
   source?: string;
@@ -29,13 +31,10 @@ export type Contact = {
 };
 
 function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 function ConfidenceBadge({ c }: { c?: Contact["confidence"] }) {
@@ -54,7 +53,7 @@ function ConfidenceBadge({ c }: { c?: Contact["confidence"] }) {
   );
 }
 
-function CopyButton({
+function ActionButton({
   value,
   icon: Icon,
   label,
@@ -68,11 +67,12 @@ function CopyButton({
   href?: string;
 }) {
   const [copied, setCopied] = useState(false);
-  if (!value) return null;
+  if (!value && !href) return null;
 
   const handleClick = (e: React.MouseEvent) => {
-    if (href) return; // let link navigate
+    if (href) return;
     e.preventDefault();
+    if (!value) return;
     navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1400);
@@ -81,7 +81,7 @@ function CopyButton({
 
   const baseCls = cn(
     "inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-muted/50 text-sm font-medium text-foreground transition-all hover:border-foreground/30 hover:bg-foreground hover:text-background active:scale-[0.97]",
-    square ? "w-10 shrink-0" : "flex-1 min-w-0 px-3",
+    square ? "w-10 shrink-0" : "min-w-0 flex-1 px-3",
   );
 
   if (href) {
@@ -103,41 +103,74 @@ function CopyButton({
 
 function ContactCard({ c }: { c: Contact }) {
   const [imgIdx, setImgIdx] = useState(0);
-  const allEmails = [c.email, ...(c.emails ?? [])].filter((e): e is string => !!e);
-  const primaryEmail = allEmails[0];
-  const extraEmails = allEmails.slice(1);
+  const allEmails = Array.from(new Set([c.email, ...(c.emails ?? [])].filter((e): e is string => !!e)));
+  const allPhones = Array.from(new Set([c.phone, ...(c.phones ?? [])].filter((p): p is string => !!p)));
 
-  // Build a prioritized list of image candidates with smart fallbacks.
+  // Build prioritized image candidates.
+  // Prefer the AI-supplied URL (often a scraped direct image), then LinkedIn via unavatar,
+  // then domain logo services. Final fallback is the initials avatar.
   const domain = (() => {
-    const src = c.website || primaryEmail?.split("@")[1];
+    const src = c.website || allEmails[0]?.split("@")[1];
     if (!src) return undefined;
     return src.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
   })();
-  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company)\/([^/?#]+)/i)?.[1];
+  const linkedinHandle = c.linkedinUrl?.match(/linkedin\.com\/(?:in|company|school)\/([^/?#]+)/i)?.[1];
+
+  // media.licdn.com hot-links are blocked by referer policy in browsers, so skip those.
+  const usableSuppliedImage = c.imageUrl && !/media\.licdn\.com|licdn\.com\/dms/i.test(c.imageUrl)
+    ? c.imageUrl
+    : undefined;
 
   const imageCandidates = [
-    linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}`,
-    c.imageUrl,
+    usableSuppliedImage,
+    linkedinHandle && `https://unavatar.io/linkedin/${linkedinHandle}?fallback=false`,
     c.kind === "company" && domain && `https://logo.clearbit.com/${domain}`,
-    domain && `https://unavatar.io/${domain}`,
-    c.kind === "company" && domain && `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+    c.kind === "company" && domain && `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+    domain && `https://unavatar.io/${domain}?fallback=false`,
   ].filter((u): u is string => !!u);
 
   const currentImg = imageCandidates[imgIdx];
+  const showFallback = imgIdx >= imageCandidates.length;
+
+  // Build action buttons with a hard cap of 4.
+  // Priority depends on contact kind:
+  // - company: website → primary email → form/phone → linkedin
+  // - person:  primary email → phone → linkedin → form/website
+  type Action = { key: string; node: React.ReactNode };
+  const actions: Action[] = [];
+  const push = (key: string, node: React.ReactNode | null) => {
+    if (node && actions.length < 4) actions.push({ key, node });
+  };
+
+  if (c.kind === "company") {
+    if (c.website) push("web", <ActionButton value={c.website} icon={Globe} label="Website" href={c.website} />);
+    if (allEmails[0]) push("email-0", <ActionButton value={allEmails[0]} icon={Mail} label={allEmails[0]} />);
+    if (c.formUrl) push("form", <ActionButton value={c.formUrl} icon={FileText} label="Contact form" href={c.formUrl} />);
+    if (allPhones[0]) push("phone-0", <ActionButton value={allPhones[0]} icon={Phone} label={allPhones[0]} />);
+    if (allEmails[1]) push("email-1", <ActionButton value={allEmails[1]} icon={Mail} label={allEmails[1]} />);
+    if (c.linkedinUrl) push("li", <ActionButton value={c.linkedinUrl} icon={LinkedinIcon} label="LinkedIn" square href={c.linkedinUrl} />);
+  } else {
+    if (allEmails[0]) push("email-0", <ActionButton value={allEmails[0]} icon={Mail} label={allEmails[0]} />);
+    if (allPhones[0]) push("phone-0", <ActionButton value={allPhones[0]} icon={Phone} label={allPhones[0]} />);
+    if (allEmails[1]) push("email-1", <ActionButton value={allEmails[1]} icon={Mail} label={allEmails[1]} />);
+    if (c.formUrl) push("form", <ActionButton value={c.formUrl} icon={FileText} label="Contact form" href={c.formUrl} />);
+    if (c.linkedinUrl) push("li", <ActionButton value={c.linkedinUrl} icon={LinkedinIcon} label="LinkedIn" square href={c.linkedinUrl} />);
+  }
 
   return (
     <div className="group rounded-2xl border border-border bg-card p-5 transition-colors hover:border-foreground/20">
       <div className="flex items-start gap-4">
         <Avatar className={cn("h-16 w-16 shrink-0 border border-border", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
-          {currentImg && (
+          {!showFallback && currentImg && (
             <AvatarImage
               src={currentImg}
               alt={c.name}
               onError={() => setImgIdx((i) => i + 1)}
+              referrerPolicy="no-referrer"
               className={c.kind === "company" ? "object-contain p-1" : "object-cover"}
             />
           )}
-          <AvatarFallback className={cn("bg-muted text-sm font-medium text-muted-foreground", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
+          <AvatarFallback className={cn("bg-muted text-sm font-semibold text-muted-foreground", c.kind === "company" ? "rounded-xl" : "rounded-full")}>
             {c.name ? initials(c.name) : c.kind === "company" ? <Building2 className="h-6 w-6" /> : <User className="h-6 w-6" />}
           </AvatarFallback>
         </Avatar>
@@ -162,32 +195,24 @@ function ContactCard({ c }: { c: Contact }) {
         </div>
       </div>
 
-      {(primaryEmail || c.phone || c.linkedinUrl) && (
-        <div className="mt-4 flex items-stretch gap-2">
-          <CopyButton value={primaryEmail} icon={Mail} label={primaryEmail ?? "Email"} />
-          {c.phone && <CopyButton value={c.phone} icon={Phone} label={c.phone} />}
-          {c.linkedinUrl && (
-            <CopyButton value={c.linkedinUrl} icon={LinkedinIcon} label="LinkedIn" square href={c.linkedinUrl} />
-          )}
-        </div>
-      )}
-
-      {extraEmails.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {extraEmails.map((email) => (
-            <CopyButton key={email} value={email} icon={Mail} label={email} />
+      {actions.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-stretch gap-2">
+          {actions.map((a) => (
+            <div key={a.key} className="flex min-w-[140px] flex-1 basis-[140px]">
+              {a.node}
+            </div>
           ))}
         </div>
       )}
 
       <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-        {c.website && (
+        {c.website && c.kind === "person" && (
           <a href={c.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
             <Globe className="h-3.5 w-3.5" />
             <span className="max-w-[220px] truncate">{c.website.replace(/^https?:\/\//, "")}</span>
           </a>
         )}
-        {c.contactUrl && c.contactUrl !== c.website && (
+        {c.contactUrl && c.contactUrl !== c.website && c.contactUrl !== c.formUrl && (
           <a href={c.contactUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
             <ExternalLink className="h-3.5 w-3.5" />
             Contact page
@@ -223,7 +248,6 @@ export function ContactResults({ contacts }: { contacts: Contact[] }) {
 
 /**
  * Extract `[{...}]` JSON from a fenced ```contacts block in streamed text.
- * Tolerates an in-progress / unterminated block during streaming.
  */
 export function parseContacts(text: string): { prose: string; contacts: Contact[] | null; streaming: boolean } {
   const fenceRe = /```contacts\s*([\s\S]*?)(```|$)/i;
