@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Search, Loader2, Sparkles } from "lucide-react";
@@ -32,6 +32,7 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
   const { updateThread } = useThreads();
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [chatError, setChatError] = useState<string | null>(null);
 
   const { messages, sendMessage, status } = useChat({
     id: threadId,
@@ -39,13 +40,23 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
     transport,
     onError: (err) => {
       console.error("chat error", err);
+      setChatError(err.message || "Search failed. Please try again.");
     },
   });
+
+  const submitSearch = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || status === "submitted" || status === "streaming") return;
+    setChatError(null);
+    void sendMessage({ text: trimmed }).catch((err: unknown) => {
+      setChatError(err instanceof Error ? err.message : "Search failed. Please try again.");
+    });
+  };
 
   // Persist messages whenever they change
   const lastSavedRef = useRef<string>("");
   useEffect(() => {
-    const sig = JSON.stringify(messages.map((m) => [m.id, m.parts.length]));
+    const sig = JSON.stringify(messages);
     if (sig === lastSavedRef.current) return;
     lastSavedRef.current = sig;
     if (messages.length === 0) return;
@@ -90,7 +101,7 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
                   {SUGGESTIONS.map((s) => (
                     <button
                       key={s}
-                      onClick={() => sendMessage({ text: s })}
+                      onClick={() => submitSearch(s)}
                       className="rounded-xl border border-border bg-card px-3 py-2.5 text-left text-xs text-foreground transition-colors hover:border-foreground/30 hover:bg-muted/50"
                     >
                       {s}
@@ -108,6 +119,11 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
               <Shimmer>Searching the web for contacts…</Shimmer>
             </div>
           )}
+          {chatError && !isLoading && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {chatError}
+            </div>
+          )}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
@@ -116,9 +132,7 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
         <div className="mx-auto w-full max-w-3xl">
           <PromptInput
             onSubmit={(msg) => {
-              const text = msg.text?.trim();
-              if (!text) return;
-              sendMessage({ text });
+              submitSearch(msg.text ?? "");
             }}
           >
             <PromptInputTextarea
