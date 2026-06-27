@@ -35,7 +35,6 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
   const { updateThread } = useThreads();
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const messagesRef = useRef<UIMessage[]>(initialMessages);
   const [chatError, setChatError] = useState<string | null>(null);
 
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -64,7 +63,6 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
   // Persist messages whenever they change
   const lastSavedRef = useRef<string>("");
   useEffect(() => {
-    messagesRef.current = messages;
     const sig = JSON.stringify(messages);
     if (sig === lastSavedRef.current) return;
     lastSavedRef.current = sig;
