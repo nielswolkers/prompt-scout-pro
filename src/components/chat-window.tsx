@@ -21,6 +21,9 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ContactResults, parseContacts } from "@/components/contact-results";
 import { useThreads } from "@/lib/threads";
 
+const CREDIT_ERROR_MESSAGE =
+  "AI credits are unavailable right now, so this search could not run. Your search was saved — please try again when credits are available.";
+
 const SUGGESTIONS = [
   "VP of Engineering at Series B fintechs in Berlin",
   "Email of the press contact at OpenAI",
@@ -34,13 +37,15 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, setMessages } = useChat({
     id: threadId,
     messages: initialMessages,
     transport,
     onError: (err) => {
       console.error("chat error", err);
-      setChatError(err.message || "Search failed. Please try again.");
+      const message = normalizeChatError(err);
+      setChatError(null);
+      setMessages((current) => ensureAssistantError(current, message));
     },
   });
 
@@ -49,7 +54,9 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
     if (!trimmed || status === "submitted" || status === "streaming") return;
     setChatError(null);
     void sendMessage({ text: trimmed }).catch((err: unknown) => {
-      setChatError(err instanceof Error ? err.message : "Search failed. Please try again.");
+      const message = normalizeChatError(err);
+      setChatError(null);
+      setMessages((current) => ensureAssistantError(ensureUserMessage(current, trimmed), message));
     });
   };
 
@@ -119,11 +126,7 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
               <Shimmer>Searching the web for contacts…</Shimmer>
             </div>
           )}
-          {chatError && !isLoading && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {chatError}
-            </div>
-          )}
+          {chatError && !isLoading && <MessageItem message={createTextMessage("assistant", chatError)} />}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
@@ -153,11 +156,43 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
   );
 }
 
-function MessageItem({ message }: { message: UIMessage }) {
-  const text = message.parts
+function normalizeChatError(error: unknown) {
+  const raw = error instanceof Error ? error.message : String(error ?? "");
+  return raw.toLowerCase().includes("credit") || raw.includes("402")
+    ? CREDIT_ERROR_MESSAGE
+    : raw || "Search failed. Please try again.";
+}
+
+function getMessageText(message: UIMessage) {
+  return message.parts
     .filter((p) => p.type === "text")
     .map((p) => (p as { text: string }).text)
     .join("");
+}
+
+function createTextMessage(role: "user" | "assistant", text: string): UIMessage {
+  return {
+    id: `${role}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    role,
+    parts: [{ type: "text", text }],
+  };
+}
+
+function ensureUserMessage(messages: UIMessage[], text: string) {
+  if (messages.some((message) => message.role === "user" && getMessageText(message) === text)) {
+    return messages;
+  }
+  return [...messages, createTextMessage("user", text)];
+}
+
+function ensureAssistantError(messages: UIMessage[], text: string) {
+  const last = messages[messages.length - 1];
+  if (last?.role === "assistant" && getMessageText(last) === text) return messages;
+  return [...messages, createTextMessage("assistant", text)];
+}
+
+function MessageItem({ message }: { message: UIMessage }) {
+  const text = getMessageText(message);
 
   const toolParts = message.parts.filter((p) => p.type?.startsWith("tool-"));
 

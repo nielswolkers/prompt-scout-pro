@@ -16,7 +16,7 @@ type ChatRequestBody = { messages?: unknown };
 function getStreamErrorMessage(error: unknown) {
   if (APICallError.isInstance(error)) {
     if (error.statusCode === 402) {
-      return "Search is temporarily unavailable because the AI credits are exhausted. Please add credits, then try again.";
+      return "AI credits are unavailable right now, so this search could not run.";
     }
     if (error.statusCode === 429) {
       return "Search is temporarily rate-limited. Please wait a moment and try again.";
@@ -25,7 +25,7 @@ function getStreamErrorMessage(error: unknown) {
   return "Search failed. Please try again.";
 }
 
-const SYSTEM_PROMPT = `You are Reachly — a precision contact research agent. Find emails, LinkedIn profiles, profile pictures / logos, websites, contact forms, and (only when explicitly requested) phone numbers for people and companies.
+const SYSTEM_PROMPT = `You are Reachly — a precision contact research agent. Find emails, LinkedIn profiles, profile pictures / logos, websites, contact forms, and (only when explicitly requested) phone numbers for people and companies. Be concise and avoid redundant searches.
 
 ALWAYS RETURN SOMETHING. Never return an empty list if the user named a specific person/role/company. Infer missing data from patterns and mark confidence "guessed".
 
@@ -55,9 +55,10 @@ CONTACT FILTERING & BUTTONS (UI shows max 4 buttons per card):
 - For plain company lookups, ALWAYS set "website" (the homepage). It is the primary button for companies.
 - Cap "emails" at 3 and "phones" at 2 per contact.
 
-SEARCH STRATEGY (4–8 tool calls per contact):
-1. search_web: name+company, site:linkedin.com/in, site:linkedin.com/company, "<company> contact form", "<company> press contact", "<company> investor relations", "<company> careers email".
-2. scrape_url: /about, /team, /contact, /press, /investors, /careers, LinkedIn profiles, Wikipedia, personal sites — extract emails, phones, form URLs, og:image.
+SEARCH STRATEGY (target 3–5 tool calls per contact):
+1. Run one broad search plus the required LinkedIn search early. Use focused site searches only when the user asks for a specific function like recruitment, press, or investor relations.
+2. Scrape only the most promising pages: official contact/about/team pages, LinkedIn result pages, Wikipedia/Wikimedia, personal bio pages, or role-specific forms. Extract emails, phones, form URLs, and og:image/logo data.
+3. Stop as soon as you have a useful contact with a LinkedIn URL and email/form/website; do not keep searching for duplicate sources.
 
 RESPONSE FORMAT (STRICT):
 - One short prose sentence (e.g. "Found 3 contacts.").
@@ -106,7 +107,7 @@ export const Route = createFileRoute("/api/chat")({
               "Search the public web (including LinkedIn, company sites, GitHub) for pages likely to contain emails or contact info. Returns title, url, description.",
             inputSchema: z.object({
               query: z.string().describe("Search query"),
-              limit: z.number().int().min(1).max(15).default(8),
+              limit: z.number().int().min(1).max(8).default(5),
             }),
             execute: async ({ query, limit }) => {
               try {
@@ -144,7 +145,7 @@ export const Route = createFileRoute("/api/chat")({
                 // Truncate to keep context small
                 return {
                   url,
-                  markdown: md.slice(0, 12000),
+                  markdown: md.slice(0, 5000),
                   metadata: res.metadata,
                 };
               } catch (e) {
@@ -155,7 +156,7 @@ export const Route = createFileRoute("/api/chat")({
         };
 
         const result = streamText({
-          model: gateway("google/gemini-3-flash-preview"),
+          model: gateway("google/gemini-2.5-flash-lite"),
           system: SYSTEM_PROMPT,
           messages: await convertToModelMessages(messages as UIMessage[]),
           tools,
