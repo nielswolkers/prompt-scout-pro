@@ -44,7 +44,7 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
     onError: (err) => {
       console.error("chat error", err);
       const message = normalizeChatError(err);
-      setChatError(message);
+      setChatError(null);
       setMessages((current) => ensureAssistantError(current, message));
     },
   });
@@ -55,7 +55,7 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
     setChatError(null);
     void sendMessage({ text: trimmed }).catch((err: unknown) => {
       const message = normalizeChatError(err);
-      setChatError(message);
+      setChatError(null);
       setMessages((current) => ensureAssistantError(ensureUserMessage(current, trimmed), message));
     });
   };
@@ -126,11 +126,7 @@ export function ChatWindow({ threadId, initialMessages }: { threadId: string; in
               <Shimmer>Searching the web for contacts…</Shimmer>
             </div>
           )}
-          {chatError && !isLoading && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {chatError}
-            </div>
-          )}
+          {chatError && !isLoading && <MessageItem message={createTextMessage("assistant", chatError)} />}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
